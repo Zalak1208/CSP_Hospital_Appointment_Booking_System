@@ -1,0 +1,6 @@
+General Physician,Dr. D. Vyas,Vastrapur,Vastrapur Care Center,Mon Tue,9:00AM-12:00PM
+Cardiologist,Dr. R. Kapadia,SG Highway,SG Highway Care Center,Tue,11:30-12:00
+Cardiologist,Dr. R. Kapadia,SG Highway,SG Highway Care Center,Tue,11:00-11:30
+Cardiologist,Dr. R. Kapadia,SG Highway,SG Highway Care Center,Mon,09:00-09:30
+Psychiatrist,Dr. R. Kapadia,Odhav,Odhav Medical Institute,Tue,11:00-11:30
+Psychiatrist,Dr. R. Kapadia,Odhav,Odhav Medical Institute,Tue,09:30-10:00

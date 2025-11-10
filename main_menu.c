@@ -3,75 +3,80 @@
 #include <stdlib.h>
 #include <string.h>
 #include "main_menu.h"
+#include "appointment.h"
 
 // ---------- MAIN MENU ----------
+
+// When user selects "Book Appointment" option
 void mainMenu(char *username) {
     int choice;
-
-    while (1) {
-        printf("\n=== Main Menu for %s ===\n", username);
+    do {
+        printf("\n=== Main Menu ===\n");
         printf("1. Book Appointment\n");
         printf("2. View Appointments\n");
-        printf("3. Delete Appointment\n");
-        printf("4. Edit Appointment\n");
-        printf("5. Exit\n");
+        printf("3. Edit Appointment\n");
+        printf("4. Delete Appointment\n");
+        printf("5. Logout\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
 
         switch (choice) {
-            case 1: 
-                bookAppointment(username);
+            case 1:
+                bookAppointment(username);  // <-- function is CALLED, not defined
                 break;
-            case 2: 
+            case 2:
                 viewAppointments(username);
                 break;
-            case 3: 
-                deleteAppointment(username);
-                break;
-            case 4: 
+            case 3:
                 editAppointment(username);
                 break;
+            case 4:
+                deleteAppointment(username);
+                break;
             case 5:
-                printf("Exiting Main Menu. Goodbye!\n");
-                return;
+                printf("Logging out...\n");
+                break;
             default:
                 printf("Invalid choice! Try again.\n");
         }
-    }
+    } while (choice != 5);
 }
 
-// ---------- BOOK APPOINTMENT (Placeholder) ----------
-void bookAppointment(char *username) {
-    printf("\n🚧 Booking feature coming soon for user '%s'...\n", username);
-}
+
+
 
 // ---------- VIEW APPOINTMENTS ----------
-void viewAppointments(char *username) {
-    struct Appointment appt;
+void viewAppointments(const char *username) {
     char filename[MAX_LEN + 20];
     sprintf(filename, "%s_appointments.txt", username);
 
+    printf("🧭 Current Working Directory:\n");
+    system("pwd");  // shows exactly where program is looking
+
+    printf("🔍 Looking for: %s\n", filename);
+
     FILE *fp = fopen(filename, "r");
     if (!fp) {
-        printf("No appointments found yet.\n");
+        printf("❌ File not found in current directory.\n");
+        system("ls -l");  // list files in that directory
         return;
     }
 
-    int found = 0;
-    printf("\nYour Appointments:\n");
-    while (fscanf(fp, "%s %s %s %s", appt.username, appt.doctorType, appt.date, appt.time) != EOF) {
-        if (strcmp(appt.username, username) == 0) {
-            found = 1;
-            printf("👩‍⚕️ Doctor: %s | 📅 Date: %s | 🕒 Time: %s\n",
-                   appt.doctorType, appt.date, appt.time);
-        }
+    printf("✅ File opened successfully!\n\n");
+
+    char line[512];
+    int count = 0;
+    while (fgets(line, sizeof(line), fp)) {
+        printf("LINE %d: %s", ++count, line);
     }
 
-    if (!found)
-        printf("No appointments yet!\n");
-
+    if (count == 0)
+        printf("⚠️ File is empty.\n");
     fclose(fp);
 }
+
+
+
 
 // ---------- DELETE APPOINTMENT ----------
 void deleteAppointment(char *username) {
