@@ -12,10 +12,8 @@ struct Appointment {
 };
 
 // Function declarations
-void mainMenu(char *username);
-void bookAppointment(char *username);
-void viewAppointments(char *username);
-void deleteAppointment(char *username);
-void editAppointment(char *username);
+void viewAppointments(const char *username);
+void deleteAppointment(const char *username);
+void editAppointment(const char *username);
 
 #endif

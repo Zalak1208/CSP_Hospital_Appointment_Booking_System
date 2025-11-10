@@ -79,7 +79,7 @@ void viewAppointments(const char *username) {
 
 
 // ---------- DELETE APPOINTMENT ----------
-void deleteAppointment(char *username) {
+void deleteAppointment(const char *username) {
     struct Appointment appt;
     char filename[MAX_LEN + 20], tempFile[MAX_LEN + 20];
     sprintf(filename, "%s_appointments.txt", username);
@@ -121,7 +121,7 @@ void deleteAppointment(char *username) {
 }
 
 // ---------- EDIT APPOINTMENT ----------
-void editAppointment(char *username) {
+void editAppointment(const char *username) {
     struct Appointment appt;
     char filename[MAX_LEN + 20], tempFile[MAX_LEN + 20];
     sprintf(filename, "%s_appointments.txt", username);
