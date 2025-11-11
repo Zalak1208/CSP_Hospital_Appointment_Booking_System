@@ -1,14 +1,11 @@
-// main_menu.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "main_menu.h"
 #include "appointment.h"
+#include "main_menu.h"
 
 // ---------- MAIN MENU ----------
-
-// When user selects "Book Appointment" option
-void mainMenu(char *username) {
+void mainMenu(const char *username) {
     int choice;
     do {
         printf("\n=== Main Menu ===\n");
@@ -22,7 +19,7 @@ void mainMenu(char *username) {
 
         switch (choice) {
             case 1:
-                bookAppointment(username);  // <-- function is CALLED, not defined
+                bookAppointment(username);
                 break;
             case 2:
                 viewAppointments(username);
@@ -42,45 +39,49 @@ void mainMenu(char *username) {
     } while (choice != 5);
 }
 
-
-
-
-// ---------- VIEW APPOINTMENTS ----------
 void viewAppointments(const char *username) {
     char filename[MAX_LEN + 20];
     sprintf(filename, "%s_appointments.txt", username);
 
-    printf("🧭 Current Working Directory:\n");
-    system("pwd");  // shows exactly where program is looking
-
-    printf("🔍 Looking for: %s\n", filename);
-
     FILE *fp = fopen(filename, "r");
     if (!fp) {
-        printf("❌ File not found in current directory.\n");
-        system("ls -l");  // list files in that directory
+        printf("❌ No appointments found for %s.\n", username);
         return;
     }
 
-    printf("✅ File opened successfully!\n\n");
+    printf("\n=== Your Appointments ===\n");
 
     char line[512];
     int count = 0;
     while (fgets(line, sizeof(line), fp)) {
-        printf("LINE %d: %s", ++count, line);
+        char doctorType[100], doctorName[100], area[100], hospital[100], day[50], slot[50];
+        // read 6 fields (matches your saved format)
+        if (sscanf(line, "%99[^,],%99[^,],%99[^,],%99[^,],%49[^,],%49[^\n]",
+                   doctorType, doctorName, area, hospital, day, slot) == 6) {
+            printf("\n-------------------------------------\n");
+            printf("✅ Appointment #%d\n", ++count);
+            printf("Doctor Type : %s\n", doctorType);
+            printf("Doctor Name : %s\n", doctorName);
+            printf("Area        : %s\n", area);
+            printf("Hospital    : %s\n", hospital);
+            printf("Day         : %s\n", day);
+            printf("Time Slot   : %s\n", slot);
+            printf("-------------------------------------\n");
+        }
     }
 
     if (count == 0)
-        printf("⚠️ File is empty.\n");
+        printf("⚠️ No appointments booked yet.\n");
+
     fclose(fp);
+    printf("\nPress Enter to return to the main menu...");
+    while(getchar() != '\n'); // consume leftover newline
+     getchar(); // wait for user to press Enter
+
 }
-
-
-
-
 // ---------- DELETE APPOINTMENT ----------
 void deleteAppointment(const char *username) {
-    struct Appointment appt;
+    Appointment appt;
     char filename[MAX_LEN + 20], tempFile[MAX_LEN + 20];
     sprintf(filename, "%s_appointments.txt", username);
     sprintf(tempFile, "%s_temp.txt", username);
@@ -88,25 +89,26 @@ void deleteAppointment(const char *username) {
     FILE *fp = fopen(filename, "r");
     FILE *temp = fopen(tempFile, "w");
     if (!fp || !temp) {
-        printf("Error opening file.\n");
+        printf("❌ Error opening file.\n");
         return;
     }
 
-    char doctor[MAX_LEN], date[20];
-    printf("Enter doctor type to delete (e.g., Cardiologist): ");
-    scanf("%s", doctor);
-    printf("Enter appointment date to delete (YYYY-MM-DD): ");
-    scanf("%s", date);
+    char doctorName[MAX_LEN];
+    printf("Enter doctor name to delete appointment: ");
+    scanf(" %[^\n]", doctorName);
 
     int deleted = 0;
-    while (fscanf(fp, "%s %s %s %s", appt.username, appt.doctorType, appt.date, appt.time) != EOF) {
-        if (strcmp(appt.username, username) == 0 &&
-            strcmp(appt.doctorType, doctor) == 0 &&
-            strcmp(appt.date, date) == 0) {
+    while (fscanf(fp, "%199[^,],%199[^,],%199[^,],%199[^,],%199[^,],%199[^\n]\n",
+                  appt.doctorType, appt.doctorName, appt.area, appt.hospital,
+                  appt.workingDays, appt.time) == 6) {
+
+        if (strcmp(appt.doctorName, doctorName) == 0) {
             deleted = 1;
-            continue;
+            continue; // skip writing this one
         }
-        fprintf(temp, "%s %s %s %s\n", appt.username, appt.doctorType, appt.date, appt.time);
+        fprintf(temp, "%s,%s,%s,%s,%s,%s\n",
+                appt.doctorType, appt.doctorName, appt.area,
+                appt.hospital, appt.workingDays, appt.time);
     }
 
     fclose(fp);
@@ -122,7 +124,7 @@ void deleteAppointment(const char *username) {
 
 // ---------- EDIT APPOINTMENT ----------
 void editAppointment(const char *username) {
-    struct Appointment appt;
+    Appointment appt;
     char filename[MAX_LEN + 20], tempFile[MAX_LEN + 20];
     sprintf(filename, "%s_appointments.txt", username);
     sprintf(tempFile, "%s_temp.txt", username);
@@ -130,29 +132,27 @@ void editAppointment(const char *username) {
     FILE *fp = fopen(filename, "r");
     FILE *temp = fopen(tempFile, "w");
     if (!fp || !temp) {
-        printf("Error opening file.\n");
+        printf("❌ Error opening file.\n");
         return;
     }
 
-    char doctor[MAX_LEN], date[20];
-    printf("Enter doctor type to edit: ");
-    scanf("%s", doctor);
-    printf("Enter appointment date to edit: ");
-    scanf("%s", date);
+    char doctorName[MAX_LEN];
+    printf("Enter doctor name to edit appointment: ");
+    scanf(" %[^\n]", doctorName);
 
     int edited = 0;
-    while (fscanf(fp, "%s %s %s %s", appt.username, appt.doctorType, appt.date, appt.time) != EOF) {
-        if (strcmp(appt.username, username) == 0 &&
-            strcmp(appt.doctorType, doctor) == 0 &&
-            strcmp(appt.date, date) == 0) {
+    while (fscanf(fp, "%199[^,],%199[^,],%199[^,],%199[^,],%199[^,],%199[^\n]\n",
+                  appt.doctorType, appt.doctorName, appt.area, appt.hospital,
+                  appt.workingDays, appt.time) == 6) {
 
-            printf("Enter new date (YYYY-MM-DD): ");
-            scanf("%s", appt.date);
-            printf("Enter new time (HH:MM): ");
-            scanf("%s", appt.time);
+        if (strcmp(appt.doctorName, doctorName) == 0) {
+            printf("Enter new time (e.g. 10:00-10:30): ");
+            scanf(" %[^\n]", appt.time);
             edited = 1;
         }
-        fprintf(temp, "%s %s %s %s\n", appt.username, appt.doctorType, appt.date, appt.time);
+        fprintf(temp, "%s,%s,%s,%s,%s,%s\n",
+                appt.doctorType, appt.doctorName, appt.area,
+                appt.hospital, appt.workingDays, appt.time);
     }
 
     fclose(fp);

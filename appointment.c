@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
+#include "appointment.h"
 
 #define MAX_LEN 200
 #define MAX_RECORDS 3000
@@ -14,9 +16,44 @@ typedef struct {
     char time[MAX_LEN];
 } Doctor;
 
-// ---------- Function Prototypes ----------
+// --- Function prototypes ---
 int loadDoctors(Doctor doctors[]);
-void bookAppointment(const char *username);
+
+// --- Utility: convert "HH:MMAM" to minutes since midnight ---
+int parseTime(const char *t) {
+    int hour, min;
+    char ampm[3];
+    sscanf(t, "%d:%d%2s", &hour, &min, ampm);
+    for (int i = 0; ampm[i]; i++) ampm[i] = toupper(ampm[i]);
+    if (strcmp(ampm, "PM") == 0 && hour != 12) hour += 12;
+    if (strcmp(ampm, "AM") == 0 && hour == 12) hour = 0;
+    return hour * 60 + min;
+}
+
+// --- Utility: format minutes as HH:MM ---
+void formatTime(int mins, char *out) {
+    int hour = mins / 60;
+    int min = mins % 60;
+    sprintf(out, "%02d:%02d", hour, min);
+}
+
+// --- Utility: check if slot already booked ---
+int isSlotBooked(const char *username, const char *doctorName, const char *day, const char *slot) {
+    char filename[MAX_LEN];
+    sprintf(filename, "%s_appointments.txt", username);
+    FILE *fp = fopen(filename, "r");
+    if (!fp) return 0;
+
+    char line[MAX_LEN];
+    while (fgets(line, sizeof(line), fp)) {
+        if (strstr(line, doctorName) && strstr(line, day) && strstr(line, slot)) {
+            fclose(fp);
+            return 1;
+        }
+    }
+    fclose(fp);
+    return 0;
+}
 
 // ----------------------------------------
 // Load all doctor data from database.txt
@@ -31,15 +68,13 @@ int loadDoctors(Doctor doctors[]) {
     char line[MAX_LEN * 3];
     int count = 0;
 
+    fgets(line, sizeof(line), fp); // skip header
     while (fgets(line, sizeof(line), fp)) {
         line[strcspn(line, "\n")] = '\0';
         if (sscanf(line, "%199[^,],%199[^,],%199[^,],%199[^,],%199[^,],%199[^\n]",
-                   doctors[count].doctorType,
-                   doctors[count].doctorName,
-                   doctors[count].area,
-                   doctors[count].hospital,
-                   doctors[count].workingDays,
-                   doctors[count].time) == 6) {
+                   doctors[count].doctorType, doctors[count].doctorName,
+                   doctors[count].area, doctors[count].hospital,
+                   doctors[count].workingDays, doctors[count].time) == 6) {
             count++;
             if (count >= MAX_RECORDS) break;
         }
@@ -49,18 +84,7 @@ int loadDoctors(Doctor doctors[]) {
 }
 
 // ----------------------------------------
-// Utility: check if string already exists in list
-// ----------------------------------------
-int existsInList(char list[][MAX_LEN], int size, const char *str) {
-    for (int i = 0; i < size; i++) {
-        if (strcmp(list[i], str) == 0)
-            return 1;
-    }
-    return 0;
-}
-
-// ----------------------------------------
-// Book appointment interactively
+// Book Appointment Function
 // ----------------------------------------
 void bookAppointment(const char *username) {
     Doctor doctors[MAX_RECORDS];
@@ -70,284 +94,200 @@ void bookAppointment(const char *username) {
         return;
     }
 
-    // === Step 1: Doctor Type ===
-    printf("\n=== Step 1: Select Doctor Type ===\n");
+    char doctorType[MAX_LEN];
 
-    char types[100][MAX_LEN];
-    int typeCount = 0;
-    for (int i = 0; i < total; i++) {
-        if (!existsInList(types, typeCount, doctors[i].doctorType)) {
-            strcpy(types[typeCount++], doctors[i].doctorType);
-        }
-    }
-
-    for (int i = 0; i < typeCount; i++)
-        printf("%d. %s\n", i + 1, types[i]);
+    // --- Step 1: Select Doctor Type ---
+    const char *types[] = {
+        "General Physician","Pediatrician","Cardiologist","Dermatologist","Neurologist",
+        "Orthopedic Surgeon","Gynecologist","Ophthalmologist","Dentist","Psychiatrist"
+    };
 
     int typeChoice;
-    printf("Enter choice: ");
-    if (scanf("%d", &typeChoice) != 1 || typeChoice < 1 || typeChoice > typeCount) {
-        printf("❌ Invalid choice.\n");
-        while (getchar() != '\n');
-        return;
-    }
-    while (getchar() != '\n');
-    char chosenType[MAX_LEN];
-    strcpy(chosenType, types[typeChoice - 1]);
-
-    // === Step 2: Area ===
-    printf("\n=== Step 2: Select Area ===\n");
-
-    char areas[100][MAX_LEN];
-    int areaCount = 0;
-    for (int i = 0; i < total; i++) {
-        if (strcmp(doctors[i].doctorType, chosenType) == 0 &&
-            !existsInList(areas, areaCount, doctors[i].area)) {
-            strcpy(areas[areaCount++], doctors[i].area);
+    while (1) {
+        printf("\n=== Step 1: Select Doctor Type ===\n");
+        for (int i = 0; i < 10; i++) printf("%d. %s\n", i + 1, types[i]);
+        printf("Enter choice: ");
+        if (scanf("%d", &typeChoice) == 1 && typeChoice >= 1 && typeChoice <= 10) {
+            strcpy(doctorType, types[typeChoice - 1]);
+            break;
         }
+        printf("❌ Invalid choice. Please try again.\n");
+        while(getchar()!='\n');
     }
 
-    for (int i = 0; i < areaCount; i++)
-        printf("%d. %s\n", i + 1, areas[i]);
+    // --- Step 2: Select Area ---
+    const char *areas[] = {
+        "Paldi","Maninagar","Navrangpura","Satellite","SG Highway","Vastrapur","Thaltej","Bodakdev",
+        "Naranpura","Ellisbridge","Gota","Isanpur","Vejalpur","Shahibaug","Vastral","Naranpura East",
+        "Odhav","Ramnagar","Nehru Park","Gandhinagar Road"
+    };
 
+    char area[MAX_LEN];
     int areaChoice;
-    printf("Enter choice: ");
-    if (scanf("%d", &areaChoice) != 1 || areaChoice < 1 || areaChoice > areaCount) {
-        printf("❌ Invalid choice.\n");
-        while (getchar() != '\n');
-        return;
+    while (1) {
+        printf("\n=== Step 2: Select Area ===\n");
+        for (int i = 0; i < 20; i++) printf("%d. %s\n", i + 1, areas[i]);
+        printf("Enter choice: ");
+        if (scanf("%d", &areaChoice) == 1 && areaChoice >= 1 && areaChoice <= 20) {
+            strcpy(area, areas[areaChoice - 1]);
+            break;
+        }
+        printf("❌ Invalid choice. Please try again.\n");
+        while(getchar()!='\n');
     }
-    while (getchar() != '\n');
-    char chosenArea[MAX_LEN];
-    strcpy(chosenArea, areas[areaChoice - 1]);
 
-    // === Step 3: Hospital ===
-    printf("\n=== Step 3: Select Hospital ===\n");
-
-    char hospitals[100][MAX_LEN];
-    int hospCount = 0;
+    // --- Step 3: Select Hospital ---
+    char hospitals[50][MAX_LEN];
+    int hospitalCount = 0;
     for (int i = 0; i < total; i++) {
-        if (strcmp(doctors[i].doctorType, chosenType) == 0 &&
-            strcmp(doctors[i].area, chosenArea) == 0 &&
-            !existsInList(hospitals, hospCount, doctors[i].hospital)) {
-            strcpy(hospitals[hospCount++], doctors[i].hospital);
+        if (strcmp(doctors[i].doctorType, doctorType) == 0 &&
+            strcmp(doctors[i].area, area) == 0) {
+            int found = 0;
+            for (int j = 0; j < hospitalCount; j++)
+                if (strcmp(hospitals[j], doctors[i].hospital) == 0) found = 1;
+            if (!found && hospitalCount < 50) strcpy(hospitals[hospitalCount++], doctors[i].hospital);
         }
     }
-
-    for (int i = 0; i < hospCount; i++)
-        printf("%d. %s\n", i + 1, hospitals[i]);
-
-    int hospChoice;
-    printf("Enter choice: ");
-    if (scanf("%d", &hospChoice) != 1 || hospChoice < 1 || hospChoice > hospCount) {
-        printf("❌ Invalid choice.\n");
-        while (getchar() != '\n');
+    if (hospitalCount == 0) {
+        printf("⚠️ No hospitals found for %s in %s.\n", doctorType, area);
         return;
     }
-    while (getchar() != '\n');
-    char chosenHospital[MAX_LEN];
-    strcpy(chosenHospital, hospitals[hospChoice - 1]);
 
-    // === Step 4: Doctor ===
-    printf("\n=== Step 4: Select Doctor ===\n");
+    char hospital[MAX_LEN];
+    int hospChoice;
+    while (1) {
+        printf("\n=== Step 3: Select Hospital ===\n");
+        for (int i = 0; i < hospitalCount; i++) printf("%d. %s\n", i + 1, hospitals[i]);
+        printf("Enter choice: ");
+        if (scanf("%d", &hospChoice) == 1 && hospChoice >= 1 && hospChoice <= hospitalCount) {
+            strcpy(hospital, hospitals[hospChoice - 1]);
+            break;
+        }
+        printf("❌ Invalid choice. Please try again.\n");
+        while(getchar()!='\n');
+    }
 
+    // --- Step 4: Select Doctor ---
     Doctor available[100];
     int availCount = 0;
     for (int i = 0; i < total; i++) {
-        if (strcmp(doctors[i].doctorType, chosenType) == 0 &&
-            strcmp(doctors[i].area, chosenArea) == 0 &&
-            strcmp(doctors[i].hospital, chosenHospital) == 0) {
+        if (strcmp(doctors[i].doctorType, doctorType) == 0 &&
+            strcmp(doctors[i].area, area) == 0 &&
+            strcmp(doctors[i].hospital, hospital) == 0) {
             available[availCount++] = doctors[i];
         }
     }
-
-    for (int i = 0; i < availCount; i++) {
-        printf("%d. %s — %s — %s\n",
-               i + 1, available[i].doctorName,
-               available[i].workingDays, available[i].time);
-    }
-
-    int docChoice;
-    printf("Enter choice: ");
-    if (scanf("%d", &docChoice) != 1 || docChoice < 1 || docChoice > availCount) {
-        printf("❌ Invalid choice.\n");
-        while (getchar() != '\n');
+    if (availCount == 0) {
+        printf("⚠️ No doctors available in this hospital.\n");
         return;
     }
-    while (getchar() != '\n');
-    Doctor chosen = available[docChoice - 1];
 
-    // === Step 5: Choose Day ===
-    printf("\n=== Step 5: Select Day ===\n");
-    char daysCopy[MAX_LEN];
-    strcpy(daysCopy, chosen.workingDays);
+    Doctor chosenDoctor;
+    int docChoice;
+    while (1) {
+        printf("\n=== Step 4: Select Doctor ===\n");
+        for (int i = 0; i < availCount; i++)
+            printf("%d. %s — %s — %s\n", i+1, available[i].doctorName,
+                   available[i].workingDays, available[i].time);
+        printf("Enter choice: ");
+        if (scanf("%d", &docChoice) == 1 && docChoice >= 1 && docChoice <= availCount) {
+            chosenDoctor = available[docChoice - 1];
+            break;
+        }
+        printf("❌ Invalid choice. Please try again.\n");
+        while(getchar()!='\n');
+    }
 
-    char *token = strtok(daysCopy, " ");
-    char days[10][MAX_LEN];
+    // --- Step 5: Select Day ---
+    char days[10][20];
+    char workingDaysCopy[MAX_LEN];
+    strcpy(workingDaysCopy, chosenDoctor.workingDays);
+    char *token = strtok(workingDaysCopy, " ");
     int dayCount = 0;
-    while (token) {
+    while (token && dayCount < 10) {
         strcpy(days[dayCount++], token);
         token = strtok(NULL, " ");
     }
 
-    for (int i = 0; i < dayCount; i++)
-        printf("%d. %s\n", i + 1, days[i]);
-
+    char selectedDay[20];
     int dayChoice;
-    printf("Enter choice: ");
-    if (scanf("%d", &dayChoice) != 1 || dayChoice < 1 || dayChoice > dayCount) {
-        printf("❌ Invalid choice.\n");
-        while (getchar() != '\n');
+    while (1) {
+        printf("\n=== Step 5: Select Day ===\n");
+        for (int i = 0; i < dayCount; i++) printf("%d. %s\n", i+1, days[i]);
+        printf("Enter day choice: ");
+        if (scanf("%d", &dayChoice) == 1 && dayChoice >= 1 && dayChoice <= dayCount) {
+            strcpy(selectedDay, days[dayChoice-1]);
+            break;
+        }
+        printf("❌ Invalid choice. Try again.\n");
+        while(getchar()!='\n');
+    }
+
+    // --- Step 6: Time slot selection ---
+    char timeCopy[MAX_LEN];
+    strcpy(timeCopy, chosenDoctor.time);
+    char *startStr = strtok(timeCopy, "-");
+    char *endStr = strtok(NULL, "-");
+    if (!startStr || !endStr) {
+        printf("⚠️ Invalid doctor time format.\n");
         return;
     }
-    while (getchar() != '\n');
-    char chosenDay[MAX_LEN];
-    strcpy(chosenDay, days[dayChoice - 1]);
 
-    // === Step 6: Choose 30-min Time Slot ===
-    printf("\n=== Step 6: Select Time Slot ===\n");
-
-    int startHour, startMin, endHour, endMin;
-    char ampm1[3], ampm2[3];
-    sscanf(chosen.time, "%d:%d%2s-%d:%d%2s", &startHour, &startMin, ampm1, &endHour, &endMin, ampm2);
-
-    // Convert to 24-hour format
-    if (strcmp(ampm1, "PM") == 0 && startHour != 12) startHour += 12;
-    if (strcmp(ampm2, "PM") == 0 && endHour != 12) endHour += 12;
-
-    int slots[48][2]; // [startHour*60 + startMin, endHour*60 + endMin]
+    int start = parseTime(startStr);
+    int end = parseTime(endStr);
+    char slots[50][20];
     int slotCount = 0;
-    int start = startHour * 60 + startMin;
-    int end = endHour * 60 + endMin;
-
-    for (int t = start; t + 30 <= end; t += 30)
-        slots[slotCount++][0] = t;
-
-    // Read booked slots from log file
-    FILE *log = fopen("appointments_log.txt", "r");
-    char booked[200][MAX_LEN];
-    int bookedCount = 0;
-    if (log) {
-        while (fgets(booked[bookedCount], sizeof(booked[0]), log)) {
-            booked[bookedCount][strcspn(booked[bookedCount], "\n")] = '\0';
-            bookedCount++;
-        }
-        fclose(log);
+    for (int t = start; t + 30 <= end; t += 30) {
+        char t1[10], t2[10];
+        formatTime(t, t1);
+        formatTime(t + 30, t2);
+        sprintf(slots[slotCount++], "%s-%s", t1, t2);
     }
 
-    // Show only available slots
-    int availableSlots[50];
-    int availableCount = 0;
+    int availableSlotCount = 0;
+    int slotIndices[50];
     for (int i = 0; i < slotCount; i++) {
-        int slotStart = slots[i][0];
-        int slotEnd = slotStart + 30;
-
-        int hour1 = slotStart / 60;
-        int min1 = slotStart % 60;
-        int hour2 = slotEnd / 60;
-        int min2 = slotEnd % 60;
-
-        char slotStr[256];
-        snprintf(slotStr, sizeof(slotStr),
-         "%s,%s,%s,%s,%02d:%02d-%02d:%02d",
-         chosen.doctorType, chosen.doctorName, chosenDay, chosen.hospital,
-         hour1, min1, hour2, min2);
-
-        int taken = 0;
-        for (int j = 0; j < bookedCount; j++) {
-            if (strcmp(booked[j], slotStr) == 0) {
-                taken = 1;
-                break;
-            }
-        }
-
-        if (!taken) {
-            printf("%d. %02d:%02d to %02d:%02d\n", availableCount + 1, hour1, min1, hour2, min2);
-            availableSlots[availableCount++] = slotStart;
+        if (!isSlotBooked(username, chosenDoctor.doctorName, selectedDay, slots[i])) {
+            slotIndices[availableSlotCount] = i;
+            printf("%d. %s\n", availableSlotCount+1, slots[i]);
+            availableSlotCount++;
         }
     }
-
-    if (availableCount == 0) {
-        printf("⚠️ No slots available for this doctor on %s.\n", chosenDay);
+    if (availableSlotCount == 0) {
+        printf("⚠️ No slots available for this doctor on %s.\n", selectedDay);
         return;
     }
 
+    char selectedSlot[20];
     int slotChoice;
-    printf("Enter choice: ");
-    if (scanf("%d", &slotChoice) != 1 || slotChoice < 1 || slotChoice > availableCount) {
-        printf("❌ Invalid choice.\n");
-        while (getchar() != '\n');
-        return;
+    while (1) {
+        printf("Enter slot number: ");
+        if (scanf("%d", &slotChoice) == 1 && slotChoice >= 1 && slotChoice <= availableSlotCount) {
+            strcpy(selectedSlot, slots[slotIndices[slotChoice-1]]);
+            break;
+        }
+        printf("❌ Invalid choice. Try again.\n");
+        while(getchar()!='\n');
     }
 
-    int chosenStart = availableSlots[slotChoice - 1];
-    int chosenEnd = chosenStart + 30;
-
-    int hour1 = chosenStart / 60, min1 = chosenStart % 60;
-    int hour2 = chosenEnd / 60, min2 = chosenEnd % 60;
-
-    // === Step 7: Confirm and Save ===
+    // --- Step 7: Save Appointment ---
     printf("\n✅ Appointment booked successfully!\n");
     printf("-------------------------------------\n");
-    printf("Doctor Type : %s\n", chosen.doctorType);
-    printf("Doctor Name : %s\n", chosen.doctorName);
-    printf("Area         : %s\n", chosen.area);
-    printf("Hospital     : %s\n", chosen.hospital);
-    printf("Day          : %s\n", chosenDay);
-    printf("Time Slot    : %02d:%02d to %02d:%02d\n", hour1, min1, hour2, min2);
+    printf("Doctor : %s (%s)\n", chosenDoctor.doctorName, chosenDoctor.doctorType);
+    printf("Hospital: %s\n", chosenDoctor.hospital);
+    printf("Area    : %s\n", chosenDoctor.area);
+    printf("Day     : %s\n", selectedDay);
+    printf("Slot    : %s\n", selectedSlot);
 
-    // Save to user file
     char filename[MAX_LEN];
     sprintf(filename, "%s_appointments.txt", username);
     FILE *fa = fopen(filename, "a");
     if (fa) {
-        fprintf(fa, "%s,%s,%s,%s,%s,%02d:%02d-%02d:%02d\n",
-                chosen.doctorType, chosen.doctorName, chosen.area,
-                chosen.hospital, chosenDay, hour1, min1, hour2, min2);
+        fprintf(fa, "%s,%s,%s,%s,%s,%s\n", chosenDoctor.doctorType,
+                chosenDoctor.doctorName, chosenDoctor.area, chosenDoctor.hospital,
+                selectedDay, selectedSlot);
         fclose(fa);
-    }
-
-    // Save to global log
-    FILE *logfile = fopen("appointments_log.txt", "a");
-    if (logfile) {
-        fprintf(logfile, "%s,%s,%s,%s,%02d:%02d-%02d:%02d\n",
-                chosen.doctorType, chosen.doctorName, chosenDay,
-                chosen.hospital, hour1, min1, hour2, min2);
-        fclose(logfile);
+    } else {
+        printf("⚠️ Could not save appointment.\n");
     }
 }
-
-
-// ----------------------------------------
-// Example Main Menu
-// ----------------------------------------
-// int main() {
-//     int choice;
-//     char username[50];
-//     printf("Enter your username: ");
-//     scanf("%49s", username);
-
-//     while (1) {
-//         printf("\n=== MAIN MENU ===\n");
-//         printf("1. Book Appointment\n");
-//         printf("2. Exit\n");
-//         printf("Enter choice: ");
-//         if (scanf("%d", &choice) != 1) {
-//             printf("❌ Invalid input.\n");
-//             while (getchar() != '\n');
-//             continue;
-//         }
-//         while (getchar() != '\n');
-
-//         if (choice == 1) {
-//             bookAppointment(username);
-//         } else if (choice == 2) {
-//             printf("👋 Goodbye!\n");
-//             break;
-//         } else {
-//             printf("❌ Invalid choice.\n");
-//         }
-//     }
-
-//     return 0;
-// }
