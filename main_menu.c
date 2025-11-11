@@ -80,44 +80,76 @@ void viewAppointments(const char *username) {
 
 // ---------- DELETE APPOINTMENT ----------
 void deleteAppointment(const char *username) {
-    struct Appointment appt;
-    char filename[MAX_LEN + 20], tempFile[MAX_LEN + 20];
+    char filename[MAX_LEN + 20];
     sprintf(filename, "%s_appointments.txt", username);
-    sprintf(tempFile, "%s_temp.txt", username);
 
-    FILE *fp = fopen(filename, "r");
-    FILE *temp = fopen(tempFile, "w");
-    if (!fp || !temp) {
-        printf("Error opening file.\n");
+    FILE *fp1 = fopen(filename, "rw");
+    if (!fp1) {
+        printf("❌ File not found in current directory.\n");
         return;
     }
 
-    char doctor[MAX_LEN], date[20];
-    printf("Enter doctor type to delete (e.g., Cardiologist): ");
-    scanf("%s", doctor);
-    printf("Enter appointment date to delete (YYYY-MM-DD): ");
-    scanf("%s", date);
-
-    int deleted = 0;
-    while (fscanf(fp, "%s %s %s %s", appt.username, appt.doctorType, appt.date, appt.time) != EOF) {
-        if (strcmp(appt.username, username) == 0 &&
-            strcmp(appt.doctorType, doctor) == 0 &&
-            strcmp(appt.date, date) == 0) {
-            deleted = 1;
-            continue;
-        }
-        fprintf(temp, "%s %s %s %s\n", appt.username, appt.doctorType, appt.date, appt.time);
+    FILE *fp2 = fopen("appointments_log.txt", "rw");
+    if (!fp2) {
+        printf("❌ Could not open log file.\n");
+        fclose(fp1);
+        return;
     }
 
-    fclose(fp);
-    fclose(temp);
-    remove(filename);
-    rename(tempFile, filename);
+    char line[512], tempLine[512];
+    int i = 1;
+    while(fgets(line, sizeof(line), fp1)) {
+        printf("%d. %s", i, line);
+        i++;
+    }
 
-    if (deleted)
-        printf("✅ Appointment deleted successfully.\n");
-    else
-        printf("❌ No matching appointment found.\n");
+    printf("\nEnter the line number of the appointment to delete: ");
+    int lineToDelete;
+    scanf("%d", &lineToDelete);
+    rewind(fp1);
+
+    FILE *temp1 = fopen("temp1.txt", "w");
+    if (!temp1) {
+        printf("❌ Could not open temporary file.\n");
+        fclose(fp1);
+        fclose(fp2);
+        return;
+    }
+    int currentLine = 1;
+    while (fgets(line, sizeof(line), fp1)) {
+        if (currentLine != lineToDelete) {
+            fputs(line, temp1);
+        }
+        else {
+            strcpy(tempLine, line);
+        }
+        currentLine++;
+    }
+
+    FILE* temp2 = fopen("temp2.txt", "w");
+    if (!temp2) {
+        printf("❌ Could not open second temporary file.\n");
+        fclose(fp1);
+        fclose(fp2);
+        fclose(temp1);
+        return;
+    }
+
+    while (fgets(line, sizeof(line), fp2)) {
+        if(strcmp(line, tempLine) != 0) {
+            fputs(line, temp2);
+        }
+    }
+    
+    fclose(temp2);
+    fclose(fp1);
+    fclose(temp1);
+    fclose(fp2);
+    remove(filename);
+    remove("appointments_log.txt");
+    rename("temp2.txt", "appointments_log.txt");
+    rename("temp1.txt", filename);
+    printf("✅ Appointment deleted successfully.\n");
 }
 
 // ---------- EDIT APPOINTMENT ----------
