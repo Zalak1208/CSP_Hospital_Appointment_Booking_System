@@ -1,2 +1,0 @@
-alice:secret
-bob:password123

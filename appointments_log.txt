@@ -1,0 +1,7 @@
+Cardiologist,Dr. R. Kapadia,Tue,SG Highway Care Center,11:30-12:00
+Cardiologist,Dr. R. Kapadia,Tue,SG Highway Care Center,11:00-11:30
+Cardiologist,Dr. R. Kapadia,Mon,SG Highway Care Center,09:00-09:30
+Psychiatrist,Dr. R. Kapadia,Tue,Odhav Medical Institute,11:00-11:30
+Psychiatrist,Dr. R. Kapadia,Tue,Odhav Medical Institute,09:30-10:00
+Psychiatrist,Dr. R. Iyer,Sun,Gota Care Center,15:00-15:30
+Neurologist,Dr. R. Shah,Sat,Paldi Care Center,16:00-16:30
