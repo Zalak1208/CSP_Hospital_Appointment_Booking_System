@@ -247,11 +247,8 @@ void bookAppointment(const char *username) {
         int hour2 = slotEnd / 60;
         int min2 = slotEnd % 60;
 
-        char slotStr[256];
-        snprintf(slotStr, sizeof(slotStr),
-         "%s,%s,%s,%s,%02d:%02d-%02d:%02d",
-         chosen.doctorType, chosen.doctorName, chosenDay, chosen.hospital,
-         hour1, min1, hour2, min2);
+        char slotStr[1024];
+        snprintf(slotStr, sizeof(slotStr), "%100.s,%100.s,%100.s,%100.s,%02d:%02d-%02d:%02d", chosen.doctorType, chosen.doctorName, chosenDay, chosen.hospital, hour1, min1, hour2, min2);
 
         int taken = 0;
         for (int j = 0; j < bookedCount; j++) {

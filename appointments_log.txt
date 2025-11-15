@@ -5,3 +5,4 @@ Psychiatrist,Dr. R. Kapadia,Tue,Odhav Medical Institute,11:00-11:30
 Psychiatrist,Dr. R. Kapadia,Tue,Odhav Medical Institute,09:30-10:00
 Psychiatrist,Dr. R. Iyer,Sun,Gota Care Center,15:00-15:30
 Neurologist,Dr. R. Shah,Sat,Paldi Care Center,16:00-16:30
+Psychiatrist,Dr. V. Singh,Tue,Gandhinagar Road General Hospital,14:00-14:30
