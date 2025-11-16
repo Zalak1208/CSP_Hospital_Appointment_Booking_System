@@ -5,13 +5,13 @@
 int main() {
     char username[MAX_LEN];
 
-    printf("=========================================\n");
+    printf("===============================================\n");
     printf("   🏥 Welcome to Hospital Management System\n");
-    printf("=========================================\n");
+    printf("===============================================\n");
 
     // Run authentication first
     if (authenticate(username)) {
-        printf("\n✅ Authentication successful! Welcome, %s.\n", username);
+        // printf("\n✅ Authentication successful! Welcome, %s.\n", username);
 
         // Now enter the main menu phase
         mainMenu(username);

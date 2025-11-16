@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include "authentication.h"   // include your header
 
 // Function prototypes
-void signup(char *username);
+bool signup(char *username);
 int login(char *username);
 void createUserAppointmentFile(const char *username);
 
@@ -21,8 +22,9 @@ int authenticate(char *username) {
         scanf("%d", &choice);
 
         if (choice == 1) {
-            signup(username);
-            return 1;  // success
+            if (signup(username)) {
+                return 1;  // success
+            }  
         } 
         else if (choice == 2) {
             if (login(username)) {
@@ -43,12 +45,12 @@ int authenticate(char *username) {
 }
 
 // ---------- SIGNUP ----------
-void signup(char *username) {
+bool signup(char *username) {
     char password[MAX_LEN];
     FILE *fp = fopen("users.txt", "a+");
     if (!fp) {
         printf("Error opening user file.\n");
-        return;
+        return false;
     }
 
     printf("Enter a new username: ");
@@ -63,7 +65,7 @@ void signup(char *username) {
         if (strcmp(u, username) == 0) {
             printf("❌ Username already exists. Try another one.\n");
             fclose(fp);
-            return;
+            return false;
         }
     }
 
@@ -73,6 +75,7 @@ void signup(char *username) {
 
     printf("✅ Account created successfully for %s!\n", username);
     createUserAppointmentFile(username);
+    return true;
 }
 
 // ---------- LOGIN ----------
@@ -110,7 +113,7 @@ void createUserAppointmentFile(const char *username) {
     FILE *fp = fopen(filename, "a");  // creates if missing
     if (fp) {
         fclose(fp);
-        printf("📁 Appointment file ready: %s\n", filename);
+        // printf("📁 Appointment file ready: %s\n", filename);
     } else {
         printf("⚠️ Error creating appointment file for %s.\n", username);
     }

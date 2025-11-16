@@ -1,0 +1,2 @@
+general physician,Dr. P. Kumar,Satellite Specialty Hospital,satellite,Sat,14:00-14:30
+general physician,Dr. P. Kumar,Satellite Specialty Hospital,satellite,Sat,15:00-15:30
