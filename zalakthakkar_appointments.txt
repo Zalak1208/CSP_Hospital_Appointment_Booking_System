@@ -1,1 +1,8 @@
-Psychiatrist,Dr. K. Kumar,Nehru Park,Nehru Park General Hospital,Sat,15:30-16:00
+General Physician,Dr. A. Naik,Maninagar,Maninagar Care Center,22-11-2025,09:00-09:30
+General Physician,Dr. P. Kumar,Satellite,Satellite Specialty Hospital,16-11-2025,14:30-15:00
+Psychiatrist,Dr. K. Kumar,Nehru Park,Nehru Park General Hospital,21-11-2025,15:00-15:30
+General Physician,Dr. P. Kumar,Satellite,Satellite Specialty Hospital,16-11-2025,15:00-15:30
+General Physician,Dr. P. Kumar,Satellite,Satellite Specialty Hospital,16-11-2025,16:30-17:00
+Psychiatrist,Dr. K. Kumar,Nehru Park,Nehru Park General Hospital,21-11-2025,16:00-16:30
+General Physician,Dr. P. Kumar,Satellite,Satellite Specialty Hospital,22-11-2025,14:00-14:30
+Neurologist,Dr. S. Rao,Gota,Gota General Hospital,21-11-2025,16:00-16:30

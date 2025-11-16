@@ -4,47 +4,74 @@
 #include "appointment.h"
 #include "main_menu.h"
 
+void waitForEnter()
+{
+    int c;
+
+    // 1. Clear everything until newline
+    while ((c = getchar()) != '\n' && c != EOF)
+        ;
+
+    // 2. Now actually wait for an empty Enter
+    printf("Press Enter to return to the main menu...");
+    fflush(stdout);
+
+    // This waits until user presses ONLY Enter
+    c = getchar();
+    while (c != '\n')
+    {
+        // If user typed anything else, ignore it
+        while ((c = getchar()) != '\n' && c != EOF)
+            ;
+        printf("Press Enter to Continue...");
+        fflush(stdout);
+        c = getchar();
+    }
+}
+
 // ---------- MAIN MENU ----------
-void mainMenu(const char *username) {
+void mainMenu(const char *username)
+{
     int choice;
-    do {
+    do
+    {
         printf("\n=== Main Menu ===\n");
         printf("1. Book Appointment\n");
         printf("2. View Appointments\n");
-        printf("3. Edit Appointment\n");
-        printf("4. Delete Appointment\n");
-        printf("5. Logout\n");
+        printf("3. Delete Appointment\n");
+        printf("4. Logout\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
 
-        switch (choice) {
-            case 1:
-                bookAppointment(username);
-                break;
-            case 2:
-                viewAppointments(username);
-                break;
-            case 3:
-                editAppointment(username);
-                break;
-            case 4:
-                deleteAppointment(username);
-                break;
-            case 5:
-                printf("Logging out...\n");
-                break;
-            default:
-                printf("Invalid choice! Try again.\n");
+        switch (choice)
+        {
+        case 1:
+            bookAppointment(username);
+            break;
+        case 2:
+            viewAppointments(username);
+            break;
+        case 3:
+            deleteAppointment(username);
+            break;
+        case 4:
+            printf("Logging out...\n");
+            return; // <-- IMPORTANT
+        default:
+            printf("Invalid choice! Try again.\n");
         }
-    } while (choice != 5);
+
+    } while (choice != 4);
 }
 
-void viewAppointments(const char *username) {
+void viewAppointments(const char *username)
+{
     char filename[MAX_LEN + 20];
     sprintf(filename, "%s_appointments.txt", username);
 
     FILE *fp = fopen(filename, "r");
-    if (!fp) {
+    if (!fp)
+    {
         printf("❌ No appointments found for %s.\n", username);
         return;
     }
@@ -53,11 +80,13 @@ void viewAppointments(const char *username) {
 
     char line[512];
     int count = 0;
-    while (fgets(line, sizeof(line), fp)) {
+    while (fgets(line, sizeof(line), fp))
+    {
         char doctorType[100], doctorName[100], area[100], hospital[100], day[50], slot[50];
         // read 6 fields (matches your saved format)
         if (sscanf(line, "%99[^,],%99[^,],%99[^,],%99[^,],%49[^,],%49[^\n]",
-                   doctorType, doctorName, area, hospital, day, slot) == 6) {
+                   doctorType, doctorName, area, hospital, day, slot) == 6)
+        {
             printf("\n-------------------------------------\n");
             printf("✅ Appointment #%d\n", ++count);
             printf("Doctor Type : %s\n", doctorType);
@@ -74,41 +103,148 @@ void viewAppointments(const char *username) {
         printf("⚠️ No appointments booked yet.\n");
 
     fclose(fp);
-    printf("\nPress Enter to return to the main menu...");
-    while(getchar() != '\n'); // consume leftover newline
-     getchar(); // wait for user to press Enter
-
+    // printf("Press Enter to return to the main menu...");
+    waitForEnter();
+    return;
 }
-// ---------- DELETE APPOINTMENT ----------
-void deleteAppointment(const char *username) {
-    Appointment appt;
-    char filename[MAX_LEN + 20], tempFile[MAX_LEN + 20];
+
+void deleteAppointment(const char *username)
+{
+    char filename[MAX_LEN + 30];
     sprintf(filename, "%s_appointments.txt", username);
-    sprintf(tempFile, "%s_temp.txt", username);
 
     FILE *fp = fopen(filename, "r");
-    FILE *temp = fopen(tempFile, "w");
-    if (!fp || !temp) {
-        printf("❌ Error opening file.\n");
+    if (!fp)
+    {
+        printf("❌ No appointments found.\n");
         return;
     }
 
-    char doctorName[MAX_LEN];
-    printf("Enter doctor name to delete appointment: ");
-    scanf(" %[^\n]", doctorName);
+    Appointment list[500];
+    char line[512];
+    int count = 0;
 
-    int deleted = 0;
-    while (fscanf(fp, "%199[^,],%199[^,],%199[^,],%199[^,],%199[^,],%199[^\n]\n",
-                  appt.doctorType, appt.doctorName, appt.area, appt.hospital,
-                  appt.workingDays, appt.time) == 6) {
-
-        if (strcmp(appt.doctorName, doctorName) == 0) {
-            deleted = 1;
-            continue; // skip writing this one
+    // Load appointments
+    while (fgets(line, sizeof(line), fp))
+    {
+        if (sscanf(line, "%199[^,],%199[^,],%199[^,],%199[^,],%19[^,],%49[^\n]",
+                   list[count].doctorType,
+                   list[count].doctorName,
+                   list[count].area,
+                   list[count].hospital,
+                   list[count].date,
+                   list[count].slot) == 6)
+        {
+            count++;
         }
-        fprintf(temp, "%s,%s,%s,%s,%s,%s\n",
-                appt.doctorType, appt.doctorName, appt.area,
-                appt.hospital, appt.workingDays, appt.time);
+    }
+    fclose(fp);
+
+    if (count == 0)
+    {
+        printf("⚠️ No appointments booked.\n");
+        return;
+    }
+
+    // Display formatted list with red ❌ icon
+    printf("\n=== ❌ Delete Appointment ===\n");
+
+    for (int i = 0; i < count; i++)
+    {
+        printf("\n-------------------------------------\n");
+        printf("❌  [%d]\n", i + 1);
+        printf("Doctor Type : %s\n", list[i].doctorType);
+        printf("Doctor Name : %s\n", list[i].doctorName);
+        printf("Area        : %s\n", list[i].area);
+        printf("Hospital    : %s\n", list[i].hospital);
+        printf("Date        : %s\n", list[i].date);
+        printf("Time Slot   : %s\n", list[i].slot);
+        printf("-------------------------------------\n");
+    }
+
+    // Choice
+    int choice = -1;
+    char buffer[50];
+
+    while (1)
+    {
+        printf("\nEnter appointment number to delete: ");
+        scanf("%49s", buffer);
+
+        int isValid = 1;
+
+        // check all characters are digits
+        for (int i = 0; buffer[i] != '\0'; i++)
+        {
+            if (buffer[i] < '0' || buffer[i] > '9')
+            {
+                isValid = 0;
+                break;
+            }
+        }
+
+        if (!isValid)
+        {
+            printf("❌ Invalid input! Please enter a valid number.\n");
+            continue; // ask again
+        }
+
+        choice = atoi(buffer);
+
+        if (choice < 1 || choice > count)
+        {
+            printf("❌ Invalid choice! Choose a number from 1 to %d.\n", count);
+            continue; // ask again
+        }
+
+        break; // valid!
+    }
+
+    if (choice < 1 || choice > count)
+    {
+        printf("❌ Invalid choice.\n");
+        return;
+    }
+
+    int delIndex = choice - 1;
+
+    // Confirmation step
+    char confirm;
+    printf("\nAre you sure you want to delete this appointment? (y/n): ");
+    scanf(" %c", &confirm);
+
+    if (confirm != 'y' && confirm != 'Y')
+    {
+        printf("\n❌ Deletion cancelled. Returning to main menu...\n");
+        return;
+    }
+
+    // Personal File Delete
+    char tempFile[MAX_LEN + 30];
+    sprintf(tempFile, "%s_temp.txt", username);
+
+    fp = fopen(filename, "r");
+    FILE *temp = fopen(tempFile, "w");
+
+    while (fgets(line, sizeof(line), fp))
+    {
+        Appointment a;
+
+        if (sscanf(line, "%199[^,],%199[^,],%199[^,],%199[^,],%19[^,],%49[^\n]",
+                   a.doctorType, a.doctorName, a.area, a.hospital, a.date, a.slot) != 6)
+            continue;
+
+        int match =
+            strcmp(a.doctorType, list[delIndex].doctorType) == 0 &&
+            strcmp(a.doctorName, list[delIndex].doctorName) == 0 &&
+            strcmp(a.date, list[delIndex].date) == 0 &&
+            strcmp(a.slot, list[delIndex].slot) == 0;
+
+        if (!match)
+        {
+            fprintf(temp, "%s,%s,%s,%s,%s,%s\n",
+                    a.doctorType, a.doctorName, a.area, a.hospital, a.date, a.slot);
+        }
     }
 
     fclose(fp);
@@ -116,52 +252,36 @@ void deleteAppointment(const char *username) {
     remove(filename);
     rename(tempFile, filename);
 
-    if (deleted)
-        printf("✅ Appointment deleted successfully.\n");
-    else
-        printf("❌ No matching appointment found.\n");
-}
+    // Global File Delete
+    FILE *fg = fopen("all_appointments.txt", "r");
+    FILE *fgTemp = fopen("all_appointments_tmp.txt", "w");
 
-// ---------- EDIT APPOINTMENT ----------
-void editAppointment(const char *username) {
-    Appointment appt;
-    char filename[MAX_LEN + 20], tempFile[MAX_LEN + 20];
-    sprintf(filename, "%s_appointments.txt", username);
-    sprintf(tempFile, "%s_temp.txt", username);
+    while (fgets(line, sizeof(line), fg))
+    {
+        char user[200], t[200], n[200], ar[200], h[200], d[20], s[50];
 
-    FILE *fp = fopen(filename, "r");
-    FILE *temp = fopen(tempFile, "w");
-    if (!fp || !temp) {
-        printf("❌ Error opening file.\n");
-        return;
-    }
+        if (sscanf(line, "%199[^,],%199[^,],%199[^,],%199[^,],%199[^,],%19[^,],%49[^\n]",
+                   user, t, n, ar, h, d, s) != 7)
+            continue;
 
-    char doctorName[MAX_LEN];
-    printf("Enter doctor name to edit appointment: ");
-    scanf(" %[^\n]", doctorName);
+        int match =
+            strcmp(user, username) == 0 &&
+            strcmp(t, list[delIndex].doctorType) == 0 &&
+            strcmp(n, list[delIndex].doctorName) == 0 &&
+            strcmp(d, list[delIndex].date) == 0 &&
+            strcmp(s, list[delIndex].slot) == 0;
 
-    int edited = 0;
-    while (fscanf(fp, "%199[^,],%199[^,],%199[^,],%199[^,],%199[^,],%199[^\n]\n",
-                  appt.doctorType, appt.doctorName, appt.area, appt.hospital,
-                  appt.workingDays, appt.time) == 6) {
-
-        if (strcmp(appt.doctorName, doctorName) == 0) {
-            printf("Enter new time (e.g. 10:00-10:30): ");
-            scanf(" %[^\n]", appt.time);
-            edited = 1;
+        if (!match)
+        {
+            fprintf(fgTemp, "%s,%s,%s,%s,%s,%s,%s\n",
+                    user, t, n, ar, h, d, s);
         }
-        fprintf(temp, "%s,%s,%s,%s,%s,%s\n",
-                appt.doctorType, appt.doctorName, appt.area,
-                appt.hospital, appt.workingDays, appt.time);
     }
 
-    fclose(fp);
-    fclose(temp);
-    remove(filename);
-    rename(tempFile, filename);
+    fclose(fg);
+    fclose(fgTemp);
+    remove("all_appointments.txt");
+    rename("all_appointments_tmp.txt", "all_appointments.txt");
 
-    if (edited)
-        printf("✅ Appointment updated successfully.\n");
-    else
-        printf("❌ Appointment not found.\n");
+    printf("\n✅ Appointment deleted successfully!\n");
 }
