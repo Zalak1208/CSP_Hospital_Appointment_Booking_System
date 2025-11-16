@@ -1,5 +1,4 @@
 Zalak,General Physician,Dr. P. Kumar,Satellite,Satellite Specialty Hospital,16-11-2025,14:00-14:30
-Zalak,Psychiatrist,Dr. K. Kumar,Nehru Park,Nehru Park General Hospital,21-11-2025,15:30-16:00
 zalakthakkar,General Physician,Dr. A. Naik,Maninagar,Maninagar Care Center,22-11-2025,09:00-09:30
 zalakthakkar,General Physician,Dr. P. Kumar,Satellite,Satellite Specialty Hospital,16-11-2025,14:30-15:00
 zalakthakkar,Psychiatrist,Dr. K. Kumar,Nehru Park,Nehru Park General Hospital,21-11-2025,15:00-15:30
@@ -12,3 +11,4 @@ Zalak,Neurologist,Dr. S. Rao,Gota,Gota General Hospital,21-11-2025,14:00-14:30
 zalakthakkar,Neurologist,Dr. S. Rao,Gota,Gota General Hospital,21-11-2025,16:00-16:30
 Zalak,Dermatologist,Dr. M. Chaudhary,SG Highway,SG Highway General Hospital,20-11-2025,09:00-09:30
 Zalak,Dermatologist,Dr. M. Chaudhary,SG Highway,SG Highway General Hospital,20-11-2025,09:30-10:00
+Zalak,General Physician,Dr. P. Kumar,Satellite,Satellite Specialty Hospital,22-11-2025,15:00-15:30
