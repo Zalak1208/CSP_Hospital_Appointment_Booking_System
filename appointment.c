@@ -6,9 +6,6 @@
 #include <time.h>
 #include "appointment.h"
 
-#define MAX_LEN 200
-#define MAX_RECORDS 5000
-
 /* ---------- utility: clear stdin ---------- */
 static void flush_stdin(void)
 {

@@ -31,8 +31,7 @@ void bookAppointment(const char *username);
 int parseTime(const char *t);
 void formatTime(int mins, char *out, size_t outsz);
 int loadDoctors(Doctor doctors[]);
-int isSlotBooked(const char *username, const char *doctorName,
-                 const char *day, const char *slot);
+
 int add_unique(char list[][200], int *count, const char *value, int max);
 
 int selectDoctorType(Doctor doctors[], int total, int prevChoice);

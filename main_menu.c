@@ -4,28 +4,28 @@
 #include "appointment.h"
 #include "main_menu.h"
 
-void waitForEnter()
+void waitForEnter(void)
 {
     int c;
 
-    // 1. Clear everything until newline
+    // Flush any previous input
     while ((c = getchar()) != '\n' && c != EOF)
-        ;
+    {
+    }
 
-    // 2. Now actually wait for an empty Enter
     printf("Press Enter to return to the main menu...");
     fflush(stdout);
 
-    // This waits until user presses ONLY Enter
-    c = getchar();
-    while (c != '\n')
+    // Wait for ONLY Enter
+    while ((c = getchar()) != '\n')
     {
-        // If user typed anything else, ignore it
-        while ((c = getchar()) != '\n' && c != EOF)
-            ;
+        // Clear junk input
+        while (c != '\n' && c != EOF)
+        {
+            c = getchar();
+        }
         printf("Press Enter to Continue...");
         fflush(stdout);
-        c = getchar();
     }
 }
 
@@ -56,7 +56,7 @@ void mainMenu(const char *username)
             break;
         case 4:
             printf("Logging out...\n");
-            return; // <-- IMPORTANT
+            return;
         default:
             printf("Invalid choice! Try again.\n");
         }
@@ -80,12 +80,14 @@ void viewAppointments(const char *username)
 
     char line[512];
     int count = 0;
+
+    // Updated fields: date instead of day
     while (fgets(line, sizeof(line), fp))
     {
-        char doctorType[100], doctorName[100], area[100], hospital[100], day[50], slot[50];
-        // read 6 fields (matches your saved format)
-        if (sscanf(line, "%99[^,],%99[^,],%99[^,],%99[^,],%49[^,],%49[^\n]",
-                   doctorType, doctorName, area, hospital, day, slot) == 6)
+        char doctorType[100], doctorName[100], area[100], hospital[100], date[20], slot[50];
+
+        if (sscanf(line, "%99[^,],%99[^,],%99[^,],%99[^,],%19[^,],%49[^\n]",
+                   doctorType, doctorName, area, hospital, date, slot) == 6)
         {
             printf("\n-------------------------------------\n");
             printf("✅ Appointment #%d\n", ++count);
@@ -93,7 +95,7 @@ void viewAppointments(const char *username)
             printf("Doctor Name : %s\n", doctorName);
             printf("Area        : %s\n", area);
             printf("Hospital    : %s\n", hospital);
-            printf("Day         : %s\n", day);
+            printf("Date        : %s\n", date);
             printf("Time Slot   : %s\n", slot);
             printf("-------------------------------------\n");
         }
@@ -103,9 +105,7 @@ void viewAppointments(const char *username)
         printf("⚠️ No appointments booked yet.\n");
 
     fclose(fp);
-    // printf("Press Enter to return to the main menu...");
     waitForEnter();
-    return;
 }
 
 void deleteAppointment(const char *username)
@@ -134,9 +134,8 @@ void deleteAppointment(const char *username)
                    list[count].hospital,
                    list[count].date,
                    list[count].slot) == 6)
-        {
+
             count++;
-        }
     }
     fclose(fp);
 
@@ -200,11 +199,11 @@ void deleteAppointment(const char *username)
         break; // valid!
     }
 
-    if (choice < 1 || choice > count)
-    {
-        printf("❌ Invalid choice.\n");
-        return;
-    }
+    // if (choice < 1 || choice > count)
+    // {
+    //     printf("❌ Invalid choice.\n");
+    //     return;
+    // }
 
     int delIndex = choice - 1;
 
@@ -213,75 +212,81 @@ void deleteAppointment(const char *username)
     printf("\nAre you sure you want to delete this appointment? (y/n): ");
     scanf(" %c", &confirm);
 
-    if (confirm != 'y' && confirm != 'Y')
+    if (confirm == 'n' || confirm == 'N')
     {
         printf("\n❌ Deletion cancelled. Returning to main menu...\n");
         return;
     }
 
     // Personal File Delete
-    char tempFile[MAX_LEN + 30];
-    sprintf(tempFile, "%s_temp.txt", username);
-
-    fp = fopen(filename, "r");
-    FILE *temp = fopen(tempFile, "w");
-
-    while (fgets(line, sizeof(line), fp))
+    else if (confirm == 'y' || confirm == 'Y')
     {
-        Appointment a;
+        char tempFile[MAX_LEN + 30];
+        sprintf(tempFile, "%s_temp.txt", username);
 
-        if (sscanf(line, "%199[^,],%199[^,],%199[^,],%199[^,],%19[^,],%49[^\n]",
-                   a.doctorType, a.doctorName, a.area, a.hospital, a.date, a.slot) != 6)
-            continue;
+        fp = fopen(filename, "r");
+        FILE *temp = fopen(tempFile, "w");
 
-        int match =
-            strcmp(a.doctorType, list[delIndex].doctorType) == 0 &&
-            strcmp(a.doctorName, list[delIndex].doctorName) == 0 &&
-            strcmp(a.date, list[delIndex].date) == 0 &&
-            strcmp(a.slot, list[delIndex].slot) == 0;
-
-        if (!match)
+        while (fgets(line, sizeof(line), fp))
         {
-            fprintf(temp, "%s,%s,%s,%s,%s,%s\n",
-                    a.doctorType, a.doctorName, a.area, a.hospital, a.date, a.slot);
+            Appointment a;
+
+            if (sscanf(line, "%199[^,],%199[^,],%199[^,],%199[^,],%19[^,],%49[^\n]",
+                       a.doctorType, a.doctorName, a.area, a.hospital, a.date, a.slot) != 6)
+                continue;
+
+            int match =
+                strcmp(a.doctorType, list[delIndex].doctorType) == 0 &&
+                strcmp(a.doctorName, list[delIndex].doctorName) == 0 &&
+                strcmp(a.date, list[delIndex].date) == 0 &&
+                strcmp(a.slot, list[delIndex].slot) == 0;
+
+            if (!match)
+            {
+                fprintf(temp, "%s,%s,%s,%s,%s,%s\n",
+                        a.doctorType, a.doctorName, a.area, a.hospital, a.date, a.slot);
+            }
         }
-    }
 
-    fclose(fp);
-    fclose(temp);
-    remove(filename);
-    rename(tempFile, filename);
+        fclose(fp);
+        fclose(temp);
+        remove(filename);
+        rename(tempFile, filename);
 
-    // Global File Delete
-    FILE *fg = fopen("all_appointments.txt", "r");
-    FILE *fgTemp = fopen("all_appointments_tmp.txt", "w");
+        // Global File Delete
+        FILE *fg = fopen("all_appointments.txt", "r");
+        FILE *fgTemp = fopen("all_appointments_tmp.txt", "w");
 
-    while (fgets(line, sizeof(line), fg))
-    {
-        char user[200], t[200], n[200], ar[200], h[200], d[20], s[50];
-
-        if (sscanf(line, "%199[^,],%199[^,],%199[^,],%199[^,],%199[^,],%19[^,],%49[^\n]",
-                   user, t, n, ar, h, d, s) != 7)
-            continue;
-
-        int match =
-            strcmp(user, username) == 0 &&
-            strcmp(t, list[delIndex].doctorType) == 0 &&
-            strcmp(n, list[delIndex].doctorName) == 0 &&
-            strcmp(d, list[delIndex].date) == 0 &&
-            strcmp(s, list[delIndex].slot) == 0;
-
-        if (!match)
+        while (fgets(line, sizeof(line), fg))
         {
-            fprintf(fgTemp, "%s,%s,%s,%s,%s,%s,%s\n",
-                    user, t, n, ar, h, d, s);
+            char user[200], t[200], n[200], ar[200], h[200], d[20], s[50];
+
+            if (sscanf(line, "%199[^,],%199[^,],%199[^,],%199[^,],%199[^,],%19[^,],%49[^\n]",
+                       user, t, n, ar, h, d, s) != 7)
+                continue;
+
+            int match =
+                strcmp(user, username) == 0 &&
+                strcmp(t, list[delIndex].doctorType) == 0 &&
+                strcmp(n, list[delIndex].doctorName) == 0 &&
+                strcmp(d, list[delIndex].date) == 0 &&
+                strcmp(s, list[delIndex].slot) == 0;
+
+            if (!match)
+            {
+                fprintf(fgTemp, "%s,%s,%s,%s,%s,%s,%s\n",
+                        user, t, n, ar, h, d, s);
+            }
         }
+
+        fclose(fg);
+        fclose(fgTemp);
+        remove("all_appointments.txt");
+        rename("all_appointments_tmp.txt", "all_appointments.txt");
+
+        printf("\n✅ Appointment deleted successfully!\n");
     }
-
-    fclose(fg);
-    fclose(fgTemp);
-    remove("all_appointments.txt");
-    rename("all_appointments_tmp.txt", "all_appointments.txt");
-
-    printf("\n✅ Appointment deleted successfully!\n");
+    else { 
+        printf("\n❌ Invalid input. Deletion cancelled.\n"); 
+    }
 }

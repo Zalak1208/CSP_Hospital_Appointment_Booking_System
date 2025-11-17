@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "authentication.h"   // include your header
+#include "authentication.h"   
 
 // Function prototypes
 void signup(char *username);
@@ -22,12 +22,12 @@ int authenticate(char *username) {
 
         if (choice == 1) {
             signup(username);
-            return 1;  // success
+            return 1;  
         } 
         else if (choice == 2) {
             if (login(username)) {
                 printf("✅ Login successful! Welcome, %s!\n", username);
-                return 1;  // success
+                return 1;  
             } else {
                 printf("❌ Invalid username or password. Try again.\n");
             }
